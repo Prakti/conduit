@@ -6,6 +6,7 @@ defmodule Conduit.AccountsTest do
   alias Conduit.Auth
 
   describe "register user" do
+    @tag :wip
     @tag :integration
     test "should succeed with valid data" do
       assert {:ok, %User{} = user} = Accounts.register_user(build(:user))

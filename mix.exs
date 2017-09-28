@@ -31,9 +31,11 @@ defmodule Conduit.Mixfile do
   defp deps do
     [
       {:comeonin, "~> 3.1"},
-      {:commanded, "~> 0.13"},
-      {:commanded_ecto_projections, "~> 0.5"},
-      {:commanded_eventstore_adapter, "~> 0.1"},
+      {:commanded, path: "~/src/commanded", override: true},
+      # {:commanded, github: "slashdotdash/commanded", branch: "feature/dispatch-sync", override: true},
+      {:commanded_ecto_projections, github: "slashdotdash/commanded-ecto-projections", branch: "master"},
+      {:commanded_eventstore_adapter, github: "slashdotdash/commanded-eventstore-adapter", branch: "feature/eventstore-v0.11"},
+      {:eventstore, github: "slashdotdash/eventstore", branch: "feature/stream_id"},
       {:cors_plug, "~> 1.4"},
       {:cowboy, "~> 1.0"},
       {:exconstructor, "~> 1.1"},

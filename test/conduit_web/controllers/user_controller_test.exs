@@ -78,7 +78,6 @@ defmodule ConduitWeb.UserControllerTest do
       :wait_for_author,
     ]
 
-    @tag :wip
     @tag :web
     test "should update and return user when data is valid", %{conn: conn, user: user} do
       conn = put authenticated_conn(conn, user), user_path(conn, :update), user: [username: "jakeupdated", email: "jakeupdated@jake.jake"]

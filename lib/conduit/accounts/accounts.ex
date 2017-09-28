@@ -22,10 +22,17 @@ defmodule Conduit.Accounts do
       |> RegisterUser.downcase_email()
       |> RegisterUser.hash_password()
 
-    with {:ok, version} <- Router.dispatch(register_user, include_aggregate_version: true) do
-      Notifications.wait_for(User, user_uuid, version)
+    with :ok <- Router.dispatch(register_user, consistency: :strong) do
+      get_user(user_uuid)
     else
       reply -> reply
+    end
+  end
+
+  defp get_user(uuid) do
+    case Repo.get(User, uuid) do
+      nil -> {:error, :not_found}
+      user -> {:ok, user}
     end
   end
 
@@ -41,8 +48,8 @@ defmodule Conduit.Accounts do
       |> UpdateUser.downcase_email()
       |> UpdateUser.hash_password()
 
-    with {:ok, version} <- Router.dispatch(update_user, include_aggregate_version: true) do
-      Notifications.wait_for(User, user_uuid, version)
+    with :ok <- Router.dispatch(update_user, consistency: :strong) do
+      get_user(user_uuid)
     else
       reply -> reply
     end

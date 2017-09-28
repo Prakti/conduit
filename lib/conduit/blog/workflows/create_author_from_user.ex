@@ -1,5 +1,6 @@
 defmodule Conduit.Blog.Workflows.CreateAuthorFromUser do
-  use Commanded.Event.Handler, name: "Blog.Workflows.CreateAuthorFromUser"
+  use Commanded.Event.Handler,
+    name: "Blog.Workflows.CreateAuthorFromUser"
 
   alias Conduit.Accounts.Events.UserRegistered
   alias Conduit.Blog

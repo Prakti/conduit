@@ -14,7 +14,7 @@ defmodule Conduit.Application do
       supervisor(ConduitWeb.Endpoint, []),
 
       # Accounts context
-      supervisor(Conduit.Accounts.Supervisor, []),
+      supervisor(Accounts.Supervisor, []),
 
       # Enforce unique constraints
       worker(Conduit.Validation.Unique, []),

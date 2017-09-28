@@ -88,14 +88,15 @@ defmodule Conduit.Blog do
   Create an author
   """
   def create_author(attrs \\ %{}) do
-    uuid = UUID.uuid4()
+    author_uuid = UUID.uuid4()
+    create_author =
+      attrs
+      |> CreateAuthor.new()
+      |> CreateAuthor.assign_uuid(author_uuid)
 
-    attrs
-    |> CreateAuthor.new()
-    |> CreateAuthor.assign_uuid(uuid)
-    |> Router.dispatch()
-    |> case do
-      :ok -> Wait.until(fn -> Repo.get(Author, uuid) end)
+    with :ok <- Router.dispatch(create_author, consistency: :strong) do
+      get(Author, author_uuid)
+    else
       reply -> reply
     end
   end
@@ -111,7 +112,7 @@ defmodule Conduit.Blog do
   Follow an author
   """
   def follow_author(%Author{uuid: author_uuid} = author, %Author{uuid: follower_uuid}) do
-    with :ok <- Router.dispatch(FollowAuthor.new(author_uuid: author_uuid, follower_uuid: follower_uuid)) do
+    with :ok <- Router.dispatch(FollowAuthor.new(author_uuid: author_uuid, follower_uuid: follower_uuid), consistency: :strong) do
       {:ok, %Author{author | following: true}}
     else
       reply -> reply
@@ -122,7 +123,7 @@ defmodule Conduit.Blog do
   unfollow an author
   """
   def unfollow_author(%Author{uuid: author_uuid} = author, %Author{uuid: unfollower_uuid}) do
-    with :ok <- Router.dispatch(UnfollowAuthor.new(author_uuid: author_uuid, unfollower_uuid: unfollower_uuid)) do
+    with :ok <- Router.dispatch(UnfollowAuthor.new(author_uuid: author_uuid, unfollower_uuid: unfollower_uuid), consistency: :strong) do
       {:ok, %Author{author | following: false}}
     else
       reply -> reply
@@ -133,17 +134,25 @@ defmodule Conduit.Blog do
   Publishes an article by the given author.
   """
   def publish_article(%Author{} = author, attrs \\ %{}) do
-    uuid = UUID.uuid4()
+    article_uuid = UUID.uuid4()
+    publish_article =
+      attrs
+      |> PublishArticle.new()
+      |> PublishArticle.assign_uuid(article_uuid)
+      |> PublishArticle.assign_author(author)
+      |> PublishArticle.generate_url_slug()
 
-    attrs
-    |> PublishArticle.new()
-    |> PublishArticle.assign_uuid(uuid)
-    |> PublishArticle.assign_author(author)
-    |> PublishArticle.generate_url_slug()
-    |> Router.dispatch()
-    |> case do
-      :ok -> Wait.until(fn -> Repo.get(Article, uuid) end)
+    with :ok <- Router.dispatch(publish_article, consistency: :strong) do
+      get(Article, article_uuid)
+    else
       reply -> reply
+    end
+  end
+
+  defp get(schema, uuid) do
+    case Repo.get(schema, uuid) do
+      nil -> {:error, :not_found}
+      projection -> {:ok, projection}
     end
   end
 
@@ -151,9 +160,8 @@ defmodule Conduit.Blog do
   Favorite the article for an author
   """
   def favorite_article(%Article{uuid: article_uuid}, %Author{uuid: author_uuid}) do
-    with :ok <- Router.dispatch(FavoriteArticle.new(article_uuid: article_uuid, favorited_by_author_uuid: author_uuid)),
-         :ok <- Wait.until(fn -> favorited_article(article_uuid, author_uuid) != nil end),
-         article <- Repo.get(Article, article_uuid) do
+    with :ok <- Router.dispatch(FavoriteArticle.new(article_uuid: article_uuid, favorited_by_author_uuid: author_uuid), consistency: :strong),
+         {:ok, article} <- get(Article, article_uuid) do
       {:ok, %Article{article | favorited: true}}
     else
       reply -> reply
@@ -164,9 +172,8 @@ defmodule Conduit.Blog do
   Unfavorite the article for an author
   """
   def unfavorite_article(%Article{uuid: article_uuid}, %Author{uuid: author_uuid}) do
-    with :ok <- Router.dispatch(UnfavoriteArticle.new(article_uuid: article_uuid, unfavorited_by_author_uuid: author_uuid)),
-         :ok <- Wait.until(fn -> favorited_article(article_uuid, author_uuid) == nil end),
-         article <- Repo.get(Article, article_uuid) do
+    with :ok <- Router.dispatch(UnfavoriteArticle.new(article_uuid: article_uuid, unfavorited_by_author_uuid: author_uuid), consistency: :strong),
+         {:ok, article} <- get(Article, article_uuid) do
       {:ok, %Article{article | favorited: false}}
     else
       reply -> reply
@@ -177,16 +184,17 @@ defmodule Conduit.Blog do
   Add a comment to an article
   """
   def comment_on_article(%Article{} = article, %Author{} = author, attrs \\ %{}) do
-    uuid = UUID.uuid4()
+    comment_uuid = UUID.uuid4()
+    comment_on_article =
+      attrs
+      |> CommentOnArticle.new()
+      |> CommentOnArticle.assign_uuid(comment_uuid)
+      |> CommentOnArticle.assign_article(article)
+      |> CommentOnArticle.assign_author(author)
 
-    attrs
-    |> CommentOnArticle.new()
-    |> CommentOnArticle.assign_uuid(uuid)
-    |> CommentOnArticle.assign_article(article)
-    |> CommentOnArticle.assign_author(author)
-    |> Router.dispatch()
-    |> case do
-      :ok -> Wait.until(fn -> Repo.get(Comment, uuid) end)
+    with :ok <- Router.dispatch(comment_on_article, consistency: :strong) do
+      get(Comment, comment_uuid)
+    else
       reply -> reply
     end
   end
@@ -195,19 +203,15 @@ defmodule Conduit.Blog do
   Delete a comment made by the user. Returns `:ok` on success
   """
   def delete_comment(%Comment{} = comment, %Author{} = author) do
-    %DeleteComment{}
+    DeleteComment.new(%{})
     |> DeleteComment.assign_comment(comment)
     |> DeleteComment.deleted_by(author)
-    |> Router.dispatch()
+    |> Router.dispatch(consistency: :strong)
   end
 
   defp article_by_slug_query(slug) do
     slug
     |> String.downcase()
     |> ArticleBySlug.new()
-  end
-
-  defp favorited_article(article_uuid, favorited_by_author_uuid) do
-    Repo.get_by(FavoritedArticle, article_uuid: article_uuid, favorited_by_author_uuid: favorited_by_author_uuid)
   end
 end

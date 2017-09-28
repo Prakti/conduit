@@ -1,5 +1,7 @@
 defmodule Conduit.Blog.Projectors.Article do
-  use Commanded.Projections.Ecto, name: "Blog.Projectors.Article"
+  use Commanded.Projections.Ecto,
+    name: "Blog.Projectors.Article",
+    consistency: :strong
 
   alias Conduit.Blog.{Author,Article,Feed,Comment,FavoritedArticle}
   alias Conduit.Blog.Events.{
