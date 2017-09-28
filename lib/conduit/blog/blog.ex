@@ -4,10 +4,10 @@ defmodule Conduit.Blog do
   """
 
   alias Conduit.Accounts.User
-  alias Conduit.Blog.{Article,Author,Comment,FavoritedArticle}
+  alias Conduit.Blog.{Article,Author,Comment}
   alias Conduit.Blog.Commands.{FavoriteArticle,FollowAuthor,CommentOnArticle,CreateAuthor,DeleteComment,FavoriteArticle,PublishArticle,UnfavoriteArticle,UnfollowAuthor}
   alias Conduit.Blog.Queries.{ArticleBySlug,ArticleComments,FeedArticles,ListArticles,ListTags}
-  alias Conduit.{Repo,Router,Wait}
+  alias Conduit.{Repo,Router}
 
   @doc """
   Get the author for a given user account, or return `nil` if not found

@@ -4,7 +4,6 @@ defmodule Conduit.Accounts do
   """
 
   alias Conduit.Accounts.Commands.{RegisterUser,UpdateUser}
-  alias Conduit.Accounts.Notifications
   alias Conduit.Accounts.Queries.{UserByUsername,UserByEmail}
   alias Conduit.Accounts.User
   alias Conduit.{Repo,Router}

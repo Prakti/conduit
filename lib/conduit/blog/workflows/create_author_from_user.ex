@@ -1,13 +1,19 @@
 defmodule Conduit.Blog.Workflows.CreateAuthorFromUser do
   use Commanded.Event.Handler,
-    name: "Blog.Workflows.CreateAuthorFromUser"
+    name: "Blog.Workflows.CreateAuthorFromUser",
+    consistency: :strong
 
   alias Conduit.Accounts.Events.UserRegistered
-  alias Conduit.Blog
+  alias Conduit.Blog.Commands.CreateAuthor
+  alias Conduit.Router
 
   def handle(%UserRegistered{uuid: user_uuid, username: username}, _metadata) do
-    {:ok, _author} = Blog.create_author(%{user_uuid: user_uuid, username: username})
+    create_author = %CreateAuthor{
+      uuid: UUID.uuid4(),
+      user_uuid: user_uuid,
+      username: username
+    }
 
-    :ok
+    Router.dispatch(create_author)
   end
 end
